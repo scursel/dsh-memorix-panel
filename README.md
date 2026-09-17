@@ -38,6 +38,21 @@
 
 > ⚠️ **为什么是 body 级挂载 + DOM 落位,而不是槽位**:DSH 的浏览器侧由**多个客户端组装域**组成,槽位系统(`slots`)与 `dsh-better-sidebar` 的 tab 注册表都**按域隔离**;插件实例可能被挂进一个不被可见 UI 读取的域,于是出现"注册成功但界面上看不到"的静默失败(实测踩过)。现在入口先挂到 `document.body`,再按 **DOM 查找**「Session 日志」按钮把自己插进它右侧——不依赖任何域,也不需要任何注入声明。
 
+## 多语言 / Localization
+
+面板文案跟随 **DSH 外壳的当前语言**:两种语言都注册在客户端 `locale` 服务的 `dsh-memorix-panel` 命名空间下,每次取值都读当时的活动语言。
+
+| 语言 | 状态 |
+| --- | --- |
+| 简体中文 `zh` | 默认(上游原文逐字保留) |
+| English `en` | 新增 |
+
+- 切换外壳语言后,已经打开的面板会立即重绘,不需要刷新页面。
+- 部署里没有 `locale` 服务时,面板回退到简体中文,行为与旧版完全一致。
+- 标签映射(记忆类型、状态、长期记忆的 state / scope / kind)存的是**语言键**,在取值时翻译——写成模块级常量会在模块加载时就把语言定死。
+- host 半不再拼装面向用户的文案:`/memorix-panel/api` 的错误响应新增稳定的 `code`(可选 `params` / `hintCode` / `hintParams`),由浏览器半按当前语言渲染;`error` 字段保留为中文兜底,供日志与不认识该 `code` 的调用方使用。
+- 相对时间改由浏览器半渲染(host 只发 ISO 时间戳),因此响应里的 `lastAge` / `age` 字段已移除。
+
 ## 前置条件
 
 | 依赖 | 要求 | 说明 |
@@ -332,4 +347,4 @@ dsh plugin --profile web add dsh-memorix-panel
 #    then hard-refresh the browser (Ctrl/Cmd+Shift+R)
 ```
 
-Look for the native **「● 记忆 N」** button at the top-right of the session header (or the「Memorix 记忆」tab if `dsh-better-sidebar` is installed). Reads are direct and read-only against `~/.memorix/data/memorix.db`; every write goes through the official `memorix` CLI. MIT licensed.
+Look for the native **「● 记忆 N」 / "● Memory N"** button at the top-right of the session header (or the「Memorix 记忆」/ "Memorix Memory" tab if `dsh-better-sidebar` is installed). Panel copy follows the shell's active locale — Simplified Chinese or English. Reads are direct and read-only against `~/.memorix/data/memorix.db`; every write goes through the official `memorix` CLI. MIT licensed.
